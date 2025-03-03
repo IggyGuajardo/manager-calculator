@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Manager Commission Calculator</title>
+    <!-- Load React -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Load Babel for JSX support -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Calculator React Component -->
+    <script type="text/babel">
+        // Access React methods from global object
+        const { useState, useEffect } = React;
+
+        // Main component
+        const StoreManagerCalculator = () => {
+          const [formData, setFormData] = useState({
+            grossAddGoal: 20,
+            accessoryGoal: 500,
+            autoPayGoal: 10,
+            protectGoal: 10,
+            rpmGoal: 10,
+            pppActivationGoal: 10,
+            upgradeGoal: 10,
+            plans30: '',
+            plans40: '',
+            plans55: '',
+            plans60: '',
+            upgrades: '',
+            autoPayEnabled: '',
+            protectEnabled: '',
+            rpm: '',
+            accessoriesValue: '',
+            grossAddsWith40Plus: '',
+            pppAccessoryRevenue: '',
+            pppActivations: '',
+            aiaCount: ''
+          });
+
+          const [results, setResults] = useState({
+            planCommission: 0,
+            upgradeCommission: 0,
+            autoPayCommission: 0,
+            protectCommission: 0,
+            accessoriesCommission: 0,
+            pppCommission: 0,
+            aiaCommission: 0,
+            performanceMultiplier: 0,
+            totalCommission: 0,
+            grossAddPercentage: 0,
+            accessoryPercentage: 0,
+            autoPayPercentage: 0,
+            protectPercentage: 0,
+            rpmPercentage: 0,
+            pppActivationPercentage: 0,
+            performanceTier: "",
+            bonusCommission: 0,
+            bonusDetails: []
+          });
+
+          const handleInputChange = (e) => {
+            const { name, value } = e.target;
+            setFormData({
+              ...formData,
+              [name]: value === '' ? '' : parseFloat(value) || 0
+            });
+          };
+
+          const getNumericValue = (value) => {
+            return value === '' ? 0 : parseFloat(value) || 0;
+          };
+
+          // Calculate commissions whenever form data changes
+          useEffect(() => {
+            calculateCommission();
+          }, [formData]);
+
+          const calculateCommission = () => {
+            // Plan commissions
+            const plan30Commission = 0;
+            const plan40Commission = getNumericValue(formData.plans40) * 2;
+            const plan55Commission = getNumericValue(formData.plans55) * 5;
+            const plan60Commission = getNumericValue(formData.plans60) * 6;
+            const totalPlanCommission = plan30Commission + plan40Commission + plan55Commission + plan60Commission;
+
+            // Upgrade commission
+            const upgradeCommission = getNumericValue(formData.upgrades) * 3;
+
+            // Total gross adds
+            const totalGrossAdds = getNumericValue(formData.plans30) + getNumericValue(formData.plans40) + 
+                                getNumericValue(formData.plans55) + getNumericValue(formData.plans60);
+            
+            // Gross Add percentage of goal
+            const grossAddPercentage = (totalGrossAdds / getNumericValue(formData.grossAddGoal)) * 100 || 0;
+
+            // Accessory percentage of goal
+            const accessoryPercentage = (getNumericValue(formData.accessoriesValue) / getNumericValue(formData.accessoryGoal)) * 100 || 0;
+            
+            // Auto Pay percentage of goal
+            const autoPayPercentage = (getNumericValue(formData.autoPayEnabled) / getNumericValue(formData.autoPayGoal)) * 100 || 0;
+            
+            // Protect percentage of goal
+            const protectPercentage = (getNumericValue(formData.protectEnabled) / getNumericValue(formData.protectGoal)) * 100 || 0;
+            
+            // RPM percentage of goal
+            const rpmPercentage = (getNumericValue(formData.rpm) / getNumericValue(formData.rpmGoal)) * 100 || 0;
+            
+            // PPP Activation percentage of goal
+            const pppActivationPercentage = (getNumericValue(formData.pppActivations) / getNumericValue(formData.pppActivationGoal)) * 100 || 0;
+
+            // Determine performance tier
+            let performanceTier = "";
+            let performanceMultiplier = 0;
+            
+            if (grossAddPercentage <= 70) {
+              performanceTier = "0% (0-70% of goal)";
+              performanceMultiplier = 0;
+            } else if (grossAddPercentage <= 80) {
+              performanceTier = "50% (71-80% of goal)";
+              performanceMultiplier = 0.5;
+            } else if (grossAddPercentage <= 119) {
+              performanceTier = "100% (81-119% of goal)";
+              performanceMultiplier = grossAddPercentage / 100;
+            } else {
+              performanceTier = "120% (120%+ of goal)";
+              performanceMultiplier = 1.2;
+            }
+
+            // Check if goal is reached for Auto Pay and Protect bonuses
+            const isGoalReached = grossAddPercentage >= 100 || accessoryPercentage >= 100;
+            
+            // Auto Pay and Protect commissions
+            const autoPayCommission = isGoalReached ? getNumericValue(formData.autoPayEnabled) * 1 : 0;
+            const protectCommission = isGoalReached ? getNumericValue(formData.protectEnabled) * 1 : 0;
+
+            // Accessories commission (standard 7%)
+            const baseAccessoriesCommission = getNumericValue(formData.accessoriesValue) * 0.07;
+            
+            // PPP commissions
+            const pppGrossAddCommission = getNumericValue(formData.grossAddsWith40Plus) * 1;
+            const pppAccessoriesCommission = getNumericValue(formData.pppAccessoryRevenue) * 0.10;
+            const totalPppCommission = pppGrossAddCommission + pppAccessoriesCommission;
+
+            // AIA commission ($20 per, but not included in main total as it's paid after 90 days)
+            const aiaCommission = getNumericValue(formData.aiaCount) * 20;
+
+            // Calculate total commission before performance multiplier
+            const subtotalCommission = totalPlanCommission + upgradeCommission + autoPayCommission + 
+                                    protectCommission + baseAccessoriesCommission + totalPppCommission;
+            
+            // Apply performance multiplier
+            const commissionWithMultiplier = subtotalCommission * performanceMultiplier;
+            
+            // Calculate bonus commission for store managers
+            let bonusCommission = 0;
+            const bonusDetails = [];
+            
+            // Gross Add Goal Bonus
+            if (grossAddPercentage >= 100) {
+              bonusCommission += 100;
+              bonusDetails.push({ category: "Gross Add Goal", amount: 100, description: "100%+ of goal reached" });
+            } else if (grossAddPercentage >= 80) {
+              bonusCommission += 50;
+              bonusDetails.push({ category: "Gross Add Goal", amount: 50, description: "80-99% of goal reached" });
+            }
+            
+            // Accessory Goal Bonus
+            if (accessoryPercentage >= 100) {
+              bonusCommission += 100;
+              bonusDetails.push({ category: "Accessory Goal", amount: 100, description: "100%+ of goal reached" });
+            } else if (accessoryPercentage >= 80) {
+              bonusCommission += 50;
+              bonusDetails.push({ category: "Accessory Goal", amount: 50, description: "80-99% of goal reached" });
+            }
+            
+            // Auto Pay Goal Bonus
+            if (autoPayPercentage >= 100) {
+              bonusCommission += 100;
+              bonusDetails.push({ category: "Auto Pay Goal", amount: 100, description: "100%+ of goal reached" });
+            } else if (autoPayPercentage >= 80) {
+              bonusCommission += 50;
+              bonusDetails.push({ category: "Auto Pay Goal", amount: 50, description: "80-99% of goal reached" });
+            }
+            
+            // Protect Goal Bonus
+            if (protectPercentage >= 100) {
+              bonusCommission += 100;
+              bonusDetails.push({ category: "Protect Goal", amount: 100, description: "100%+ of goal reached" });
+            } else if (protectPercentage >= 80) {
+              bonusCommission += 50;
+              bonusDetails.push({ category: "Protect Goal", amount: 50, description: "80-99% of goal reached" });
+            }
+            
+            // RPM Goal Bonus
+            if (rpmPercentage >= 100) {
+              bonusCommission += 100;
+              bonusDetails.push({ category: "RPM Goal", amount: 100, description: "100%+ of goal reached" });
+            } else if (rpmPercentage >= 80) {
+              bonusCommission += 50;
+              bonusDetails.push({ category: "RPM Goal", amount: 50, description: "80-99% of goal reached" });
+            }
+            
+            // PPP Activation Goal Bonus
+            if (pppActivationPercentage >= 100) {
+              bonusCommission += 50;
+              bonusDetails.push({ category: "PPP Activation Goal", amount: 50, description: "100%+ of goal reached" });
+            }
+            
+            // Extra Activations Bonus
+            const extraActivations = totalGrossAdds - getNumericValue(formData.grossAddGoal);
+            if (grossAddPercentage >= 100 && getNumericValue(formData.upgrades) >= getNumericValue(formData.upgradeGoal)) {
+              if (extraActivations >= 30) {
+                bonusCommission += 300;
+                bonusDetails.push({ category: "Extra Activations", amount: 300, description: "Goal + Upgrades + 30 extra activations" });
+              } else if (extraActivations >= 20) {
+                bonusCommission += 200;
+                bonusDetails.push({ category: "Extra Activations", amount: 200, description: "Goal + Upgrades + 20 extra activations" });
+              } else if (extraActivations >= 10) {
+                bonusCommission += 100;
+                bonusDetails.push({ category: "Extra Activations", amount: 100, description: "Goal + Upgrades + 10 extra activations" });
+              }
+            }
+            
+            // Total commission with bonus
+            const totalCommission = commissionWithMultiplier + bonusCommission;
+
+            setResults({
+              planCommission: totalPlanCommission,
+              upgradeCommission,
+              autoPayCommission,
+              protectCommission,
+              accessoriesCommission: baseAccessoriesCommission,
+              pppCommission: totalPppCommission,
+              aiaCommission,
+              performanceMultiplier,
+              totalCommission,
+              grossAddPercentage,
+              accessoryPercentage,
+              autoPayPercentage,
+              protectPercentage,
+              rpmPercentage,
+              pppActivationPercentage,
+              performanceTier,
+              bonusCommission,
+              bonusDetails
+            });
+          };
+
+          return (
+            <div className="p-4 max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
+              <h1 className="text-2xl font-bold mb-4 text-center">Store Manager Commission Calculator</h1>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <h2 className="text-lg font-semibold mb-3">Goals</h2>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Gross Add Goal</label>
+                      <input
+                        type="number"
+                        name="grossAddGoal"
+                        value={formData.grossAddGoal}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Accessory Goal ($)</label>
+                      <input
+                        type="number"
+                        name="accessoryGoal"
+                        value={formData.accessoryGoal}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Auto Pay Goal</label>
+                      <input
+                        type="number"
+                        name="autoPayGoal"
+                        value={formData.autoPayGoal}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Protect Goal</label>
+                      <input
+                        type="number"
+                        name="protectGoal"
+                        value={formData.protectGoal}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">RPM Goal</label>
+                      <input
+                        type="number"
+                        name="rpmGoal"
+                        value={formData.rpmGoal}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">PPP Activation Goal</label>
+                      <input
+                        type="number"
+                        name="pppActivationGoal"
+                        value={formData.pppActivationGoal}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Upgrade Goal</label>
+                      <input
+                        type="number"
+                        name="upgradeGoal"
+                        value={formData.upgradeGoal}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                  </div>
+
+                  <h2 className="text-lg font-semibold mt-3 mb-2">Plans</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">$30 Plans</label>
+                      <input
+                        type="number"
+                        name="plans30"
+                        value={formData.plans30}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">$40 Plans</label>
+                      <input
+                        type="number"
+                        name="plans40"
+                        value={formData.plans40}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">$55 Plans</label>
+                      <input
+                        type="number"
+                        name="plans55"
+                        value={formData.plans55}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">$60 Plans</label>
+                      <input
+                        type="number"
+                        name="plans60"
+                        value={formData.plans60}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                  </div>
+
+                  <h2 className="text-lg font-semibold mt-3 mb-2">Additional Metrics</h2>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Upgrades</label>
+                      <input
+                        type="number"
+                        name="upgrades"
+                        value={formData.upgrades}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Auto Pay</label>
+                      <input
+                        type="number"
+                        name="autoPayEnabled"
+                        value={formData.autoPayEnabled}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Protect</label>
+                      <input
+                        type="number"
+                        name="protectEnabled"
+                        value={formData.protectEnabled}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">RPM</label>
+                      <input
+                        type="number"
+                        name="rpm"
+                        value={formData.rpm}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Accessory Revenue ($)</label>
+                      <input
+                        type="number"
+                        name="accessoriesValue"
+                        value={formData.accessoriesValue}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">PPP Activations $40+</label>
+                      <input
+                        type="number"
+                        name="grossAddsWith40Plus"
+                        value={formData.grossAddsWith40Plus}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">PPP Accessory Rev ($)</label>
+                      <input
+                        type="number"
+                        name="pppAccessoryRevenue"
+                        value={formData.pppAccessoryRevenue}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">PPP Activations</label>
+                      <input
+                        type="number"
+                        name="pppActivations"
+                        value={formData.pppActivations}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">AIA Count</label>
+                      <input
+                        type="number"
+                        name="aiaCount"
+                        value={formData.aiaCount}
+                        onChange={handleInputChange}
+                        className="w-full p-1 border rounded"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <h2 className="text-lg font-semibold mb-2">Commission Calculation</h2>
+                  
+                  <div className="mb-3">
+                    <div className="bg-blue-100 p-3 rounded-lg mb-2">
+                      <div className="flex justify-between font-semibold">
+                        <span>Gross Add Goal Completion:</span>
+                        <span>{results.grossAddPercentage.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Performance Tier:</span>
+                        <span>{results.performanceTier}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1 mb-3">
+                    <div className="flex justify-between">
+                      <span>Plan Commission:</span>
+                      <span>${results.planCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Upgrade Commission:</span>
+                      <span>${results.upgradeCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Auto Pay Commission:</span>
+                      <span>${results.autoPayCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Protect Commission:</span>
+                      <span>${results.protectCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Accessories Commission (7%):</span>
+                      <span>${results.accessoriesCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>PPP Commission:</span>
+                      <span>${results.pppCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between border-t mt-1 pt-1">
+                      <span>Subtotal:</span>
+                      <span>${(results.planCommission + results.upgradeCommission + results.autoPayCommission + 
+                              results.protectCommission + results.accessoriesCommission + results.pppCommission).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Performance Multiplier:</span>
+                      <span>×{results.performanceMultiplier.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Manager Bonus Section */}
+                  <div className="bg-green-100 p-3 rounded-lg mb-4">
+                    <h3 className="font-semibold border-b pb-1 mb-2">Manager Bonuses</h3>
+                    {results.bonusDetails.length > 0 ? (
+                      <div className="space-y-1">
+                        {results.bonusDetails.map((bonus, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span>{bonus.category}:</span>
+                            <span>${bonus.amount.toFixed(2)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between font-medium border-t pt-1 mt-1">
+                          <span>Total Bonus:</span>
+                          <span>${results.bonusCommission.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm italic">No bonuses earned yet</div>
+                    )}
+                  </div>
+                  
+                  <div className="bg-blue-500 text-white p-3 rounded-lg mb-4">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>TOTAL COMMISSION:</span>
+                      <span>${results.totalCommission.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="flex justify-between">
+                      <span>AIA Commission (paid after 90 days):</span>
+                      <span>${results.aiaCommission.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Goal Completion Status */}
+                  <div className="mt-4 bg-white border rounded-lg">
+                    <h3 className="font-semibold p-2 bg-gray-100 rounded-t-lg">Goal Completion Status</h3>
+                    <div className="p-2 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Gross Add Goal:</span>
+                        <span className={results.grossAddPercentage >= 100 ? "text-green-600 font-medium" : 
+                          results.grossAddPercentage >= 80 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
+                          {results.grossAddPercentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Accessory Goal:</span>
+                        <span className={results.accessoryPercentage >= 100 ? "text-green-600 font-medium" : 
+                          results.accessoryPercentage >= 80 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
+                          {results.accessoryPercentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Auto Pay Goal:</span>
+                        <span className={results.autoPayPercentage >= 100 ? "text-green-600 font-medium" : 
+                          results.autoPayPercentage >= 80 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
+                          {results.autoPayPercentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Protect Goal:</span>
+                        <span className={results.protectPercentage >= 100 ? "text-green-600 font-medium" : 
+                          results.protectPercentage >= 80 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
+                          {results.protectPercentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>RPM Goal:</span>
+                        <span className={results.rpmPercentage >= 100 ? "text-green-600 font-medium" : 
+                          results.rpmPercentage >= 80 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
+                          {results.rpmPercentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>PPP Activation Goal:</span>
+                        <span className={results.pppActivationPercentage >= 100 ? "text-green-600 font-medium" : 
+                          "text-red-600 font-medium"}>
+                          {results.pppActivationPercentage.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Render component
+        ReactDOM.render(<StoreManagerCalculator />, document.getElementById('root'));
+    </script>
+</
